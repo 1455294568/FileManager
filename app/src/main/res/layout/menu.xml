@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+	<item android:id="@+id/createfolder"
+		android:title="新建文件夹" />
+	<item android:id="@+id/createfile"
+		android:title="新建文件" />
+	<item android:id="@+id/exit"
+		android:title="退出" />
+</menu>

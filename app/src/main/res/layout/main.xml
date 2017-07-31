@@ -1,0 +1,67 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+	android:orientation="vertical"
+    android:gravity="center">
+
+	<TextView
+		android:id="@+id/currentinfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+		android:padding="5dp"/>
+
+    <ListView
+		android:id="@+id/filelistview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+		android:layout_weight="9"/>
+
+	<RelativeLayout
+		android:id="@+id/toolbar"
+		android:layout_height="0dp"
+		android:layout_width="match_parent"
+		android:layout_weight="0.8"
+		android:background="#1E88E5"
+		android:orientation="horizontal"
+		android:visibility="gone">
+
+		<LinearLayout
+			android:layout_height="wrap_content"
+			android:layout_width="wrap_content"
+			android:orientation="horizontal"
+			android:layout_centerHorizontal="true"
+			android:layout_centerVertical="true">
+
+			<ImageButton
+				android:id="@+id/copybtn"
+				android:layout_height="30dp"
+				android:layout_width="30dp"
+				android:src="@drawable/copy"
+				android:background="@android:color/transparent"
+				android:scaleType="centerInside"
+				android:visibility="gone"/>
+
+
+			<ImageButton
+				android:id="@+id/cutbtn"
+				android:layout_height="30dp"
+				android:layout_width="30dp"
+				android:src="@drawable/cut"
+				android:background="@android:color/transparent"
+				android:scaleType="centerInside"
+				android:visibility="gone"/>
+
+
+			<ImageButton
+				android:id="@+id/cancelbtn"
+				android:layout_height="30dp"
+				android:layout_width="30dp"
+				android:src="@drawable/cancel"
+				android:layout_marginLeft="30dp"
+				android:background="@android:color/transparent"
+				android:scaleType="centerInside"/>
+
+		</LinearLayout>
+	</RelativeLayout>
+
+</LinearLayout>
