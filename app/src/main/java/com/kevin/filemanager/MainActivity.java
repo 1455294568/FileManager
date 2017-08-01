@@ -17,10 +17,10 @@ import android.widget.AdapterView.*;
 import android.util.Log;
 import android.content.*;
 import android.view.*;
-import android.graphics.drawable.*;
-import java.util.*;
-import android.util.*;
-import java.io.*;
+import android.graphics.drawable.Drawable;
+import java.util.Arrays;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import android.net.Uri;
 import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
@@ -28,16 +28,17 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
-import android.graphics.*;
+import android.graphics.Bitmap;
 
 
 public class MainActivity extends Activity 
 {
+	public static Context mcontext;
 	final File sdcard = new File("/sdcard");
 	public static List<File> allFiles;
 	private File temp = null;
 	private ListView filelistview;
-	private File currentfile;
+	public File currentfile;
 	private TextView currentinfo;
 	private RelativeLayout toolbar;
 	private ImageButton copybtn, cutbtn, cancelbtn;
@@ -46,6 +47,7 @@ public class MainActivity extends Activity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+		mcontext = this;
 		filelistview = (ListView)findViewById(R.id.filelistview);
 		currentinfo = (TextView) findViewById(R.id.currentinfo);
 		toolbar = (RelativeLayout) findViewById(R.id.toolbar);
@@ -79,32 +81,111 @@ public class MainActivity extends Activity
 		{
 			if (p1.getId() == R.id.copybtn)
 			{
-				copyfile(temp);
-				getfile(currentfile);
-				temp = null;
-				toolbar.setVisibility(View.GONE);
+				final ProgressDialog p = new ProgressDialog(MainActivity.this);
+				p.setTitle("加载中");
+				p.setMessage("请稍后...");
+				p.show();
+				new Thread(new Runnable(){
+						@Override
+						public void run()
+						{
+							try
+							{
+								copyfile(temp, new File(currentfile, temp.getName()));
+								runOnUiThread(new Runnable()
+									{
+										@Override
+										public void run()
+										{
+											Toast.makeText(getApplicationContext(), "复制成功", Toast.LENGTH_LONG).show();
+											getfile(currentfile);
+
+										}
+									});
+							}
+							catch (Exception e)
+							{
+								e.printStackTrace();
+								runOnUiThread(new Runnable(){
+										@Override
+										public void run()
+										{
+											Toast.makeText(getApplicationContext(), "失败", Toast.LENGTH_SHORT).show();
+										}
+									});
+							}
+							finally
+							{
+								runOnUiThread(new Runnable()
+									{
+										@Override
+										public void run()
+										{
+											p.dismiss();
+											temp = null;
+											toolbar.setVisibility(View.GONE);
+										}
+									});
+							}
+						}
+					}).start();
+
 			}
 			else if (p1.getId() == R.id.cutbtn)
 			{
-				try
-				{
-					if (currentfile.getPath().equals(temp.getPath()))
-					{
-						Toast.makeText(getApplicationContext(), "无法将此文件夹剪切到它的子文件夹里", Toast.LENGTH_SHORT).show();
-						return;
-					}
-					temp.renameTo(new File(currentfile.getPath() + "/" + temp.getName()));
-					Toast.makeText(getApplicationContext(), "剪切成功", Toast.LENGTH_SHORT).show();
-					temp = null;
-					toolbar.setVisibility(View.GONE);
-					getfile(currentfile);
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-					temp = null;
-					Toast.makeText(getApplicationContext(), "剪切失败", Toast.LENGTH_SHORT).show();
-				}
+				new Thread(new Runnable(){
+						@Override
+						public void run()
+						{
+							try
+							{
+								if (currentfile.getPath().equals(temp.getPath()))
+								{
+									runOnUiThread(new Runnable(){
+										@Override
+										public void run()
+										{
+											Toast.makeText(getApplicationContext(), "无法将此文件夹剪切到它的子文件夹里", Toast.LENGTH_SHORT).show();
+										}
+									});									
+									return;
+								}
+								temp.renameTo(new File(currentfile.getPath() + "/" + temp.getName()));
+								runOnUiThread(new Runnable(){
+										@Override
+										public void run()
+										{
+											Toast.makeText(getApplicationContext(), "剪切成功", Toast.LENGTH_SHORT).show();
+											getfile(currentfile);
+										}
+									});
+							}
+							catch (Exception e)
+							{
+								e.printStackTrace();
+								runOnUiThread(new Runnable(){
+										@Override
+										public void run()
+										{
+											Toast.makeText(getApplicationContext(), "剪切失败", Toast.LENGTH_SHORT).show();
+										}
+									});
+
+							}
+							finally
+							{
+								runOnUiThread(new Runnable(){
+										@Override
+										public void run()
+										{
+											temp = null;
+											toolbar.setVisibility(View.GONE);
+										}
+									});
+							}
+						}
+					}).start();
+
 			}
 			else if (p1.getId() == R.id.cancelbtn)
 			{
@@ -133,17 +214,42 @@ public class MainActivity extends Activity
 								//filelistview.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 								break;
 							case 1:
-								try
-								{
-									Runtime.getRuntime().exec("rm -rf " + t.getPath()).waitFor();
-									getfile(currentfile);
-									Toast.makeText(getApplicationContext(), "删除成功", Toast.LENGTH_SHORT).show();
-								}
-								catch (Exception e)
-								{
-									e.printStackTrace();
-									Toast.makeText(getApplicationContext(), "删除失败", Toast.LENGTH_SHORT).show();
-								}
+								final ProgressDialog p = new ProgressDialog(MainActivity.this);
+								p.setTitle("删除中");
+								p.setMessage("请稍后...");
+								p.show();
+								new Thread(new Runnable(){
+										@Override
+										public void run()
+										{
+											try
+											{
+												delete(t);
+											}
+											catch (Exception e)
+											{
+												e.printStackTrace();
+												runOnUiThread(new Runnable(){
+														@Override
+														public void run()
+														{
+															p.dismiss();
+															Toast.makeText(getApplicationContext(), "删除失败", Toast.LENGTH_LONG).show();
+														}
+													});
+
+											}
+											runOnUiThread(new Runnable(){
+													@Override
+													public void run()
+													{
+														p.dismiss();
+														getfile(currentfile);
+														Toast.makeText(getApplicationContext(), "删除成功", Toast.LENGTH_LONG).show();
+													}
+												});
+										}
+									}).start();
 								break;
 							case 2:
 								final EditText newname = new EditText(MainActivity.this);
@@ -229,48 +335,6 @@ public class MainActivity extends Activity
 			openfile(f);
 		}
 	}
-
-	private void copyfile(File filet)
-	{
-		FileInputStream in;
-		FileOutputStream out;
-		if (filet.isDirectory())
-		{
-			try
-			{
-				Runtime.getRuntime().exec("cp -r " + filet.getPath() + " " + currentfile.getPath()).waitFor();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-		else
-		{
-			try
-			{
-				in = new FileInputStream(temp.getPath());
-				out = new FileOutputStream(currentfile.getPath() + "/" + temp.getName());
-				byte[] buffer = new byte[1024];
-				int read;
-				while ((read = in.read(buffer)) != -1)
-					out.write(buffer, 0, read);
-
-				in.close();
-				out.flush();
-				out = null;
-			}
-			catch (FileNotFoundException e)
-			{
-				Toast.makeText(getApplicationContext(), "文件不存在", Toast.LENGTH_SHORT).show();
-			}
-			catch (Exception e)
-			{
-				Toast.makeText(getApplicationContext(), "删除失败", Toast.LENGTH_SHORT).show();
-			}
-		}
-	}
-
 	@Override
 	public void onBackPressed()
 	{
@@ -296,7 +360,9 @@ public class MainActivity extends Activity
 	public boolean onOptionsItemSelected(final MenuItem item)
 	{
 		if (item.getItemId() == R.id.exit)
-			MainActivity.this.onBackPressed();
+		{
+			System.exit(0);
+		}
 		else
 		{
 			final EditText filename = new EditText(MainActivity.this);
@@ -362,6 +428,66 @@ public class MainActivity extends Activity
 		return true;
 	}
 
+	private void copyfile(File source, File target)
+	throws Exception
+	{
+		if (source.isDirectory())
+		{
+			if (!target.getPath().contains(source.getPath()))
+			{
+				if (!target.exists())
+					target.mkdir();
+				String[] child = source.list();
+				for (int i = 0; i < source.listFiles().length; i++)
+				{
+					copyfile(new File(source, child[i]), new File(target, child[i]));
+				}
+			}
+			else
+				runOnUiThread(new Runnable(){
+						@Override
+						public void run()
+						{
+							Toast.makeText(getApplicationContext(), "无法复制到它的子文件夹里", Toast.LENGTH_LONG).show();
+						}
+					});
+		}
+		else
+		{
+			FileInputStream in;
+			FileOutputStream out;
+			if (!source.getPath().equals(target.getPath()))
+			{
+				in = new FileInputStream(source);
+				out = new FileOutputStream(target);
+			}
+			else
+			{
+				in = new FileInputStream(source);
+				out = new FileOutputStream(new File(target.getPath() + "副本"));
+			}
+			byte[] buffer = new byte[1024];
+			int read;
+			while ((read = in.read(buffer)) != -1)
+				out.write(buffer, 0, read);
+
+			in.close();
+			out.close();
+		}
+	}
+
+	private void delete(File f)
+	{
+		if (f.isDirectory())
+		{
+			for (File child : f.listFiles())
+			{
+				delete(child);
+			}
+		}
+		f.delete();
+	}
+
 	private void openfile(File url)
 	{
 		Uri uri = Uri.fromFile(url);
@@ -391,6 +517,10 @@ public class MainActivity extends Activity
             // WAV audio file
             intent.setDataAndType(uri, "application/x-wav");
         }
+		else if (url.toString().contains(".apk"))
+		{
+			intent.setDataAndType(uri, "application/vnd.android.package-archive");
+		}
 		else if (url.toString().contains(".rtf"))
 		{
             // RTF file
@@ -437,17 +567,20 @@ class arrayadapter extends ArrayAdapter
 	DisplayImageOptions options;
 	private MainActivity context;
 	private List<File> files;
-	private Drawable iconfolder, iconfile;
+	private Drawable iconfolder, iconuknownfile, iconfile, playable;
 	arrayadapter(MainActivity context, List<File> files)
 	{
 		super(context, 0, files);
 		this.context = context;
 		this.files = files;
 		iconfolder = context.getResources().getDrawable(R.drawable.folder);
+		iconuknownfile = context.getResources().getDrawable(R.drawable.uknownfile);
 		iconfile = context.getResources().getDrawable(R.drawable.file);
+		playable = context.getResources().getDrawable(R.drawable.video);
 		options = new DisplayImageOptions.Builder()
             .cacheOnDisk(true)
             .cacheInMemory(true)
+			.showImageOnLoading(R.drawable.pic)
             .bitmapConfig(Bitmap.Config.RGB_565)
             .imageScaleType(ImageScaleType.EXACTLY)
             .resetViewBeforeLoading(true)
@@ -486,9 +619,15 @@ class arrayadapter extends ArrayAdapter
 		else
 		{
 			if (t.toString().contains(".jpg") || t.toString().contains(".png"))
-				imageLoader.displayImage(Uri.fromFile(t).toString(), view.fileimage);
-			else
+				imageLoader.displayImage("file://" + t.getPath(), view.fileimage);
+			else if (t.toString().contains(".txt") || t.toString().contains(".json") || t.toString().contains(".xml") || t.toString().contains(".log") || t.toString().contains(".java") || t.toString().contains(".c") || t.toString().contains(".cpp") || t.toString().contains(".cs"))
 				view.fileimage.setImageDrawable(iconfile);
+			else if (t.toString().contains(".mp3")  || t.toString().contains(".mp4") || t.toString().contains(".3gp") || t.toString().contains(".avi") || t.toString().contains(".wav") || t.toString().contains(".amr") || t.toString().contains(".ape") || t.toString().contains(".flac") || t.toString().contains(".rmvb"))
+			{
+				view.fileimage.setImageDrawable(playable);
+			}
+			else
+				view.fileimage.setImageDrawable(iconuknownfile);
 		}
 		view.filetext.setText(files.get(position).getName());
 		view.fileinfo.setText(getsize((float)t.length()));
