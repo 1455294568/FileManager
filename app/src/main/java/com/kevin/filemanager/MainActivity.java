@@ -2,14 +2,8 @@ package com.kevin.filemanager;
 
 import android.app.*;
 import android.os.*;
-import android.widget.ListView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
 import java.io.File;
 import java.util.List;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import java.util.ArrayList;
 import android.widget.*;
@@ -36,6 +30,8 @@ public class MainActivity extends Activity
 	public static Context mcontext;
 	final File sdcard = new File("/sdcard");
 	public static List<File> allFiles;
+	private List<Integer> pos;
+	private List<Integer> top;
 	private File temp = null;
 	private ListView filelistview;
 	public File currentfile;
@@ -48,6 +44,8 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 		mcontext = this;
+		pos = new ArrayList<Integer>();
+		top = new ArrayList<Integer>();
 		filelistview = (ListView)findViewById(R.id.filelistview);
 		currentinfo = (TextView) findViewById(R.id.currentinfo);
 		toolbar = (RelativeLayout) findViewById(R.id.toolbar);
@@ -69,10 +67,17 @@ public class MainActivity extends Activity
 		@Override
 		public void onItemClick(AdapterView<?> view , View v, int position, long id)
 		{
+			if(allFiles.get(position).isDirectory())
+			{
+				pos.add(position);
+				top.add(v.getTop());
+			}
 			getfile(allFiles.get(position));
 
 		}
 	};
+	
+	
 
 	OnClickListener toolclick = new OnClickListener(){
 
@@ -343,6 +348,9 @@ public class MainActivity extends Activity
 		{
 			getfile(currentfile.getParentFile());
 			filelistview.setAdapter(new arrayadapter(MainActivity.this, allFiles));
+			filelistview.setSelectionFromTop(pos.get(pos.size() - 1), top.get(top.size() - 1));
+			pos.remove(pos.size() - 1);
+			top.remove(top.size() - 1);
 		}
 		else
 			super.onBackPressed();
